@@ -44,9 +44,16 @@ public class MainMenu : MonoBehaviour
         }
     }
 
-    public void QuitGame()
+    public void ExitGame()
     {
-        Debug.Log("Quit Game");
+        Time.timeScale = 1f;
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#elif UNITY_WEBGL
+        Application.OpenURL("about:blank");
+#else
         Application.Quit();
+#endif
     }
 }
