@@ -5,6 +5,7 @@ public class ItemDragHandler : MonoBehaviour
     private Vector3 offset;
     private float zCoord;
     private ConveyorItem conveyorScript;
+    private bool isDragging = false;
 
     void Start()
     {
@@ -13,13 +14,13 @@ public class ItemDragHandler : MonoBehaviour
 
     void OnMouseDown()
     {
-        // คำนวณตำแหน่งเมาส์กับวัตถุดิบ
         zCoord = Camera.main.WorldToScreenPoint(gameObject.transform.position).z;
         offset = gameObject.transform.position - GetMouseAsWorldPoint();
+        isDragging = true;
 
         if (conveyorScript != null)
         {
-            conveyorScript.OnPickUp(); // แจ้งว่ากำลังถูกหยิบ (หยุดเลื่อนตามสายพาน)
+            conveyorScript.OnPickUp(); // หยุดวิ่งบนสายพานขณะถือ
         }
     }
 
@@ -32,15 +33,38 @@ public class ItemDragHandler : MonoBehaviour
 
     void OnMouseDrag()
     {
-        // ลากวัตถุดิบตามตำแหน่งเมาส์
-        transform.position = GetMouseAsWorldPoint() + offset;
+        if (isDragging)
+        {
+            transform.position = GetMouseAsWorldPoint() + offset;
+        }
     }
 
     void OnMouseUp()
     {
-        if (conveyorScript != null)
+        isDragging = false;
+
+        // ยิง Raycast เช็กว่าตอนปล่อยเมาส์ วางโดนกล่อง/ตะกร้าอันไหนอยู่
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+
+        bool stored = false;
+        if (Physics.Raycast(ray, out hit))
         {
-            conveyorScript.OnDrop(); // ปล่อยมือ (ให้กลับมาเลื่อนต่อ หรือเช็กการลงกล่อง)
+            ItemBox box = hit.collider.GetComponent<ItemBox>();
+            if (box != null)
+            {
+                // ลองส่งไอเทมเข้าไปเก็บในกล่อง
+                stored = box.TryStoreItem(gameObject);
+            }
+        }
+
+        // ถ้าไม่ได้วางลงในกล่องที่ถูกต้อง ให้ปล่อยให้มันไหลต่อหรือจัดการตามต้องการ
+        if (!stored)
+        {
+            if (conveyorScript != null)
+            {
+                conveyorScript.OnDrop(); // ให้วิ่งบนสายพานต่อถ้าลงไม่ถูกช่อง
+            }
         }
     }
 }
