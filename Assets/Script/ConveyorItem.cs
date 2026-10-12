@@ -2,24 +2,20 @@ using UnityEngine;
 
 public class ConveyorItem : MonoBehaviour
 {
-    private bool isHeld = false; // เช็กว่าผู้เล่นกำลังหยิบอยู่ไหม
+    public float itemSpeedMultiplier = 2f; // ตัวคูณความเร็วเฉพาะชิ้นนี้ (ปรับค่านี้ให้เยอะขึ้นได้ครับ)
+    private bool isHeld = false;
 
     void Update()
     {
         if (isHeld) return;
 
-        // วิ่งจากซ้ายไปขวา โดยใช้ความเร็วจากตัวจัดการสายพาน
-        float speed = ConveyorManager.Instance != null ? ConveyorManager.Instance.currentSpeed : 2f;
-        transform.Translate(Vector3.right * speed * Time.deltaTime);
+        float baseSpeed = ConveyorManager.Instance != null ? ConveyorManager.Instance.currentSpeed : 2f;
+
+        // คูณความเร็วเพิ่มเข้าไป
+        float finalSpeed = baseSpeed * itemSpeedMultiplier;
+        transform.Translate(Vector3.right * finalSpeed * Time.deltaTime);
     }
 
-    public void OnPickUp()
-    {
-        isHeld = true;
-    }
-
-    public void OnDrop()
-    {
-        isHeld = false;
-    }
+    public void OnPickUp() { isHeld = true; }
+    public void OnDrop() { isHeld = false; }
 }
