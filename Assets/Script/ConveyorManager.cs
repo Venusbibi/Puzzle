@@ -2,39 +2,42 @@ using UnityEngine;
 
 public class ConveyorManager : MonoBehaviour
 {
-    // ตัวแปร Instance เพื่อให้สคริปต์อื่นเรียกใช้ได้ง่ายๆ
     public static ConveyorManager Instance;
 
     [Header("ตั้งค่าความเร็วสายพาน")]
-    public float currentSpeed = 2f;      // ความเร็วเริ่มต้น
-    public float speedIncreaseAmount = 1f; // จำนวนความเร็วที่เพิ่มขึ้นเมื่อขยะลงถัง
-    public float maxSpeed = 8f;          // ขีดจำกัดความเร็วสูงสุด ป้องกันเร็วเกินไป
+    public float currentSpeed = 2f;
+    public float speedIncreaseAmount = 1f;
+    public float maxSpeed = 8f;
+
+    // เพิ่มตัวแปรเก็บความเร็วเริ่มต้นเพื่อใช้ตอนโดนระเบิด
+    private float defaultSpeed;
 
     void Awake()
     {
-        // ตั้งค่า Instance
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+
+        defaultSpeed = currentSpeed;
     }
 
-    // ฟังก์ชันนี้แหละครับที่ Unity แจ้งเตือนว่าหาไม่เจอ
     public void SpeedUpConveyor()
     {
-        // เพิ่มความเร็วขึ้น
         currentSpeed += speedIncreaseAmount;
+        if (currentSpeed > maxSpeed) currentSpeed = maxSpeed;
+    }
 
-        // เช็กไม่ให้ความเร็วเกินขีดจำกัด
-        if (currentSpeed > maxSpeed)
+    // ฟังก์ชันสั่งให้ไอเทมทุกชิ้นกลับไปจุดเริ่มต้น และรีเซ็ตความเร็วสายพาน
+    public void ResetAllItems()
+    {
+        // ค้นหาไอเทมทุกชิ้นบนสายพาน (ผลไม้, น้ำตาล, ผงเมจิก ฯลฯ)
+        ConveyorItem[] allItems = FindObjectsOfType<ConveyorItem>();
+
+        foreach (ConveyorItem item in allItems)
         {
-            currentSpeed = maxSpeed;
+            item.ResetToStart(); // สั่งให้กลับที่เดิม
         }
 
-        Debug.Log("⚠️ ไอเทมตกถังขยะ! สายพานเร่งความเร็วเป็น: " + currentSpeed);
+        currentSpeed = defaultSpeed; // คืนค่าความเร็วสายพานกลับเป็นปกติ
+        Debug.Log("🔄 รีเซ็ตไอเทมทั้งหมดกลับจุดเริ่มต้น!");
     }
 }

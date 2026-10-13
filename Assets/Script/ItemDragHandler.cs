@@ -7,6 +7,9 @@ public class ItemDragHandler : MonoBehaviour
     private ConveyorItem conveyorScript;
     private bool isDragging = false;
 
+    // 1. เพิ่มตัวแปรสำหรับจำตำแหน่งเดิมก่อนถูกลาก
+    private Vector3 originalPosition;
+
     void Start()
     {
         conveyorScript = GetComponent<ConveyorItem>();
@@ -16,6 +19,10 @@ public class ItemDragHandler : MonoBehaviour
     {
         zCoord = Camera.main.WorldToScreenPoint(gameObject.transform.position).z;
         offset = gameObject.transform.position - GetMouseAsWorldPoint();
+
+        // 2. จำตำแหน่งของไอเทม ณ วินาทีที่คลิกเมาส์หยิบ
+        originalPosition = transform.position;
+
         isDragging = true;
 
         if (conveyorScript != null)
@@ -43,7 +50,6 @@ public class ItemDragHandler : MonoBehaviour
     {
         isDragging = false;
 
-        // ยิง Raycast เช็กว่าตอนปล่อยเมาส์ วางโดนกล่อง/ตะกร้าอันไหนอยู่
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
 
@@ -53,17 +59,20 @@ public class ItemDragHandler : MonoBehaviour
             ItemBox box = hit.collider.GetComponent<ItemBox>();
             if (box != null)
             {
-                // ลองส่งไอเทมเข้าไปเก็บในกล่อง
+                // ถ้าตะกร้าไม่รับไอเทมนี้ ฟังก์ชัน TryStoreItem จะส่งค่ากลับมาเป็น false
                 stored = box.TryStoreItem(gameObject);
             }
         }
 
-        // ถ้าไม่ได้วางลงในกล่องที่ถูกต้อง ให้ปล่อยให้มันไหลต่อหรือจัดการตามต้องการ
+        // 3. ถ้าวางผิดตะกร้า หรือวางพลาด (stored == false)
         if (!stored)
         {
+            // สั่งให้เด้งกลับไปตำแหน่งเดิมก่อนถูกลากทันที
+            transform.position = originalPosition;
+
             if (conveyorScript != null)
             {
-                conveyorScript.OnDrop(); // ให้วิ่งบนสายพานต่อถ้าลงไม่ถูกช่อง
+                conveyorScript.OnDrop(); // กลับมาวิ่งบนสายพานต่อจากจุดเดิม
             }
         }
     }
