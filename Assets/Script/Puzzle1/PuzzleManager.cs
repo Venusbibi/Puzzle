@@ -1,88 +1,72 @@
 using UnityEngine;
+using System.Collections; // ต้องมีเพื่อใช้ระบบหน่วงเวลา
 
 public class PuzzleManager : MonoBehaviour
 {
     public static PuzzleManager Instance;
 
-    [Header("กล่องวัตถุดิบทั้งหมดที่ต้องเก็บให้ครบ")]
-    public ItemBox[] itemBoxes; // ลากกล่องวัตถุดิบทั้ง 3 กล่องมาใส่ที่นี่
+    [Header("ใส่ตะกร้าทั้งหมดในด่านนี้")]
+    public ItemBox[] allBaskets;
 
-    [Header("วัตถุดิบเป้าหมาย / กุญแจที่จะเด้งออกมา")]
-    public GameObject keyReward; // วาง UI หรือ GameObject รูปกุญแจ/ดวงจันทร์
-    public Transform keySpawnPoint; // ตำแหน่งที่จะให้กุญแจปรากฏ
+    [Header("ใส่โมเดลกุญแจ")]
+    public GameObject keyObject;
 
-    private bool isPuzzleSolved = false;
+    private bool isLevelComplete = false;
 
     void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
 
-    void Start()
-    {
-        // ซ่อนกุญแจไว้ก่อนในตอนเริ่มเกม
-        if (keyReward != null)
+        // ซ่อนกุญแจไว้ก่อนตอนเริ่มเกม
+        if (keyObject != null)
         {
-            keyReward.SetActive(false);
+            keyObject.SetActive(false);
         }
     }
 
-    // ฟังก์ชันเช็กว่าสะสมครบทุกกล่องหรือยัง
     public void CheckPuzzleCompletion()
     {
-        if (isPuzzleSolved) return;
+        if (isLevelComplete) return; // ถ้าจบด่านไปแล้วไม่ต้องเช็กซ้ำ
 
-        foreach (ItemBox box in itemBoxes)
+        bool allFull = true;
+
+        // วนลูปเช็กตะกร้าทุกใบที่เราใส่ไว้
+        foreach (ItemBox box in allBaskets)
         {
-            // ถ้ามีกล่องใดกล่องหนึ่งยังไม่ครบ ให้ข้ามไปก่อน
+            // ถ้ามีตะกร้าใบไหนที่ยังไม่เต็ม 5/5
             if (!box.IsComplete())
             {
-                return;
+                allFull = false;
+                break; // เลิกเช็กใบอื่นต่อ ถือว่ายังไม่ผ่าน
             }
         }
 
-        // ถ้าผ่านเงื่อนไขทุกกล่องแล้ว = ไขปริศนาสำเร็จ!
-        SolvePuzzle();
-    }
-
-    void SolvePuzzle()
-    {
-        isPuzzleSolved = true;
-        Debug.Log("สะสมวัตถุดิบครบแล้ว!");
-
-        if (keyReward != null)
+        // ถ้าผ่านการเช็กทั้งหมด (แปลว่า 5/5 ครบทุกใบจริงๆ)
+        if (allFull)
         {
-            // ย้ายตำแหน่งกุญแจไปที่จุด Spawn แล้วเปิดการแสดงผล
-            if (keySpawnPoint != null)
-            {
-                keyReward.transform.position = keySpawnPoint.position;
-            }
-            keyReward.SetActive(true);
+            isLevelComplete = true;
+            Debug.Log("🎉 เก็บครบ 5 ชิ้น ทั้ง 3 ตะกร้าแล้ว! ปล่อยกุญแจ!");
 
-            // (Optional) เล่น Effect เด้งขยายขนาดสั้นๆ
-            StartCoroutine(AnimateKeyPop(keyReward));
+            // สั่งเริ่มคัตซีนโชว์กุญแจและ UI
+            StartCoroutine(WinSequence());
         }
     }
 
-    // คอรูทีนทำให้กุญแจเด้งออกมาชัดเจน (Pop Animation)
-    System.Collections.IEnumerator AnimateKeyPop(GameObject key)
+    private IEnumerator WinSequence()
     {
-        Vector3 originalScale = key.transform.localScale;
-        key.transform.localScale = Vector3.zero;
-
-        float timer = 0f;
-        float duration = 0.5f;
-
-        while (timer < duration)
+        // 1. โชว์กุญแจให้เด้งขึ้นมาในฉาก
+        if (keyObject != null)
         {
-            timer += Time.deltaTime;
-            float progress = timer / duration;
-            // ใช้ AnimationCurve หรือ Lerp แบบเด้ง overshoot เล็กน้อย
-            key.transform.localScale = Vector3.Lerp(Vector3.zero, originalScale * 1.2f, progress);
-            yield return null;
+            keyObject.SetActive(true);
         }
 
-        key.transform.localScale = originalScale;
+        // 2. หน่วงเวลาให้ผู้เล่นเห็นกุญแจ (เช่น 2 วินาที)
+        yield return new WaitForSeconds(2f);
+
+        // 3. หลังจากนั้นค่อยเรียก UI Mission Complete ขึ้นมา
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowWinUI();
+        }
     }
 }
